@@ -47,8 +47,8 @@ save_path = 'D:/LiNC research/saved_models/image_topdown.pt'
 train_data = datasets.MNIST(root=MNIST_path, download=True, train=True, transform=T.ToTensor())
 test_data = datasets.MNIST(root=MNIST_path, download=True, train=False, transform=T.ToTensor())
 
-train_data = data_utils.Subset(train_data, torch.arange(1000))
-test_data = data_utils.Subset(test_data, torch.arange(100))
+train_data = data_utils.Subset(train_data, torch.arange(1024))
+test_data = data_utils.Subset(test_data, torch.arange(512))
 
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=True)
@@ -65,7 +65,8 @@ model = ConvGRUExplicitTopDown((28, 28), 10, input_dim=1,
                                topdown=True, 
                                topdown_type='image',
                                dtype = torch.FloatTensor,
-                               return_bottom_layer=True)
+                               return_bottom_layer=True,
+                               batch_first = False)
 #model = ConvGRU((28, 28), 10, input_dim=1, hidden_dim=10, kernel_size=(3,3), num_layers=args['layers'], 
 #                       dtype=torch.cuda.FloatTensor, batch_first=True).cuda().float()
 optimizer = optim.Adam(model.parameters())
@@ -77,6 +78,9 @@ for epoch in range(1):
     for batch_idx, (x, target) in enumerate(train_loader):
         optimizer.zero_grad()
         x, target = Variable(x), Variable(target)
+        x = x[None, :]
+        
+        #target = target[None, :]
         out = model(x, fetch_clues(torch.randint(0, 10, (target.shape[0], ))))
 
         loss = criterion(out, target)
@@ -91,7 +95,7 @@ for epoch in range(1):
     total_cnt = 0
     for batch_idx, (x, target) in enumerate(test_loader):
         x, target = Variable(x, volatile=True), Variable(target, volatile=True)
-        
+        x = x[None, :]
         out = model(x, fetch_clues(torch.randint(0, 10, (target.shape[0], ))))
         loss = criterion(out, target)
         _, pred_label = torch.max(out.data, 1)

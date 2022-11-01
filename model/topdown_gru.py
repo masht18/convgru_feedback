@@ -263,8 +263,10 @@ class ConvGRUExplicitTopDown(nn.Module):
         :param topdown: 27 bits encoding image label or image of size (h, w)
         :return: label 
         """
+        
         if not self.batch_first:
             # (t, b, c, h, w) -> (b, t, c, h, w)
+            print(input_tensor.shape)
             input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
 
         hidden_state = self._init_hidden(batch_size=input_tensor.size(0))
@@ -277,10 +279,11 @@ class ConvGRUExplicitTopDown(nn.Module):
         for rep in range(self.reps):
             for t in range(seq_len):
                 current_input = self.input_conv(input_tensor[:, t, :, :, :])
+                #current_input = self.input_conv(input_tensor[:, :, :, :])#[32,1,28,28]
 
                 for layer_idx in range(self.num_layers):
                     # Current state
-                    h = hidden_state[layer_idx]
+                    h = hidden_state[layer_idx] 
 
                     # Bottom-up signal is either the state from the bottom layer or the input if it's the bottom-most layer
                     bottomup = hidden_state[layer_idx-1] if layer_idx != 0 else current_input
@@ -302,6 +305,7 @@ class ConvGRUExplicitTopDown(nn.Module):
                         m = nn.Linear(self.height*self.width*self.hidden_dim[layer_idx],self.height*self.width*self.hidden_dim[layer_idx]) #changed dim here
                         topdown_sig = m(torch.flatten(hidden_state[layer_idx],start_dim=1))
 
+                    topdown_sig = torch.reshape(topdown_sig, (topdown_sig.shape[0],self.hidden_dim[layer_idx],self.height,self.width))
                     # Update hidden state of this layer by feeding bottom-up, top-down and current cell state into gru cell
                     h = self.cell_list[layer_idx](input_tensor=bottomup, # (b,t,c,h,w)
                                                   h_cur=h, topdown=topdown_sig)
