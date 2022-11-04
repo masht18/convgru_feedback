@@ -138,8 +138,9 @@ class ConvGRUTopDownCell(nn.Module):
         if topdown == None:
             topdown = torch.zeros_like(combined_conv)
 
-        topdown_concat = torch.concat((topdown,topdown),dim=1)
-        combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1) * (F.relu(topdown_concat) + 1)
+        #topdown_concat = torch.concat((topdown,topdown),dim=1)
+        combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1) * (F.relu(topdown) + 1)
+        #combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1) * (F.relu(topdown_concat) + 1)
         cc_cnm = self.conv_can(combined)
         cnm = torch.tanh(cc_cnm)
 
@@ -260,13 +261,12 @@ class ConvGRUExplicitTopDown(nn.Module):
     def forward(self, input_tensor, topdown):
         """
         :param input_tensor: (b, t, c, h, w) or (t,b,c,h,w) depends on if batch first or not
-        :param topdown: 27 bits encoding image label or image of size (h, w)
+        :param topdown: size (b,hidden,h,w) 
         :return: label 
         """
         
         if not self.batch_first:
             # (t, b, c, h, w) -> (b, t, c, h, w)
-            print(input_tensor.shape)
             input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
 
         hidden_state = self._init_hidden(batch_size=input_tensor.size(0))

@@ -81,7 +81,9 @@ for epoch in range(1):
         x = x[None, :]
         
         #target = target[None, :]
-        out = model(x, fetch_clues(torch.randint(0, 10, (target.shape[0], ))))
+        topdown = fetch_clues(torch.randint(0, 10, (target.shape[0], )))
+        print("topdown size is",topdown.shape)
+        out = model(x, topdown )
 
         loss = criterion(out, target)
         ave_loss = ave_loss * 0.9 + loss.data * 0.1 #question: deleted [0] after data
