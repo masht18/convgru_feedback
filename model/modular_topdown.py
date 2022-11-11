@@ -81,6 +81,8 @@ class ConvGRUExplicitTopDown(nn.Module):
         self.block_list = nn.ModuleList(block_list)
         self.feedback_linear_list = nn.ModuleList(feedback_linear_list)
         
+        # TODO: here we should figure out the feedforward/backward ranking of the cells using connection_strengths
+        # discuss with Mashbayar
         #output fc
         self.fc1 = nn.Linear(block_list[-1].height*block_list[-1].width*block_list[-1].hidden_dim, 100) 
         self.fc2 = nn.Linear(100, output_size)
