@@ -4,15 +4,25 @@ from collections import defaultdict
 class Node:
     def __init__(self):
         self.val = 0 #TODO: what format should val take?
+        self.shape = (0,0) #TODO: rip
         self.in_nodes = [] #nodes passing values into current node #contains Node objects
         self.out_nodes = [] #nodes being passed with values from current node #contains Node objects
         self.in_strength = [] #connection strengths of in_nodes
         self.out_strength = [] #connection strength of out_nodes
-        self.rank = [] #default value
+        self.rank_list = [] #default value
+        #  what is expected PER CELL:
+        #         :param input_size: (int, int)
+        #             Height and width of input tensor as (height, width).
+        #         :param input_dim: int
+        #             Number of channels of input tensor.
+        #         :param hidden_dim: int
+        #             Number of channels of hidden state. Can be custom for each layer or the same
+        #         :param kernel_size: (int, int) 
+        #             Size of the convolutional kernel. Can be custom for each layer or the same     
 
 class Graph(object):
     """ A brain architecture graph object, directed by default. """
-    def __init__(self, connections, conn_strength,input_node, output_node, directed=True):
+    def __init__(self, connections, conn_strength, input_node, output_node, directed=True):
         self.conn = connections #adjacency matrix
         self.directed = directed #flag for whether the connections are directed 
         self.num_node = len(self.conn)

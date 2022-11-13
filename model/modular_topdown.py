@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.topdown_gru import ConvGRUTopDownCell
 
 
-class ConvGRUExplicitTopDown(nn.Module):
+class ConvGRUExplicitTopDown(nn.Module): #output of my module
     def __init__(self, block_list, output_size, connection_strengths, topdown_input, reps = 1, dtype = torch.FloatTensor, 
                 topdown_type = 'image', topdown = True, batch_first=True, bias=True, return_bottom_layer=False):
         """
