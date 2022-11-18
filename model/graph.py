@@ -71,6 +71,7 @@ class Graph(object):
 
     def build_architecture(self):
         architecture = Architecture(self)
+        return architecture
 
     def find_feedforward_cells(self, node, t):
         in_nodes = []
@@ -183,8 +184,7 @@ class Architecture(object):
 
             pred = hidden_state_cur[-1]
         
-        #TODO: process pred through relu
-        #         
+        #TODO: process pred through relu  
         return pred
 
     def _init_hidden(self, batch_size):
