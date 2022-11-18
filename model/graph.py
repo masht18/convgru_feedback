@@ -3,8 +3,7 @@ from collections import defaultdict
 
 class Node:
     def __init__(self):
-        self.val = 0 #TODO: what format should val take?
-        self.shape = (0,0) #TODO: rip
+        #self.val = 0 #TODO: what format should val take?
         self.in_nodes = [] #nodes passing values into current node #contains Node objects
         self.out_nodes = [] #nodes being passed with values from current node #contains Node objects
         self.in_strength = [] #connection strengths of in_nodes
