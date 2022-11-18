@@ -141,8 +141,8 @@ class Architecture(object):
                             if is_first:
                                 bottomup = self.graph.conn_strength[i][node]*hidden_state_prev[i]
                             else:
-                                bottomup = bottomup + self.graph.conn_strength[i][node]*hidden_state_prev[i]
-                            if_First = False
+                                bottomup = bottomup + self.graph.conn_strength[i][node]*hidden_state_prev[i] #TODO: torch cat into channel dimension 
+                            is_first = False
 
 
                     #now we handle topdown signal
@@ -153,7 +153,7 @@ class Architecture(object):
                     elif bottomup == None: #if there is no bottomup input, then ignore topdown feedback
                         topdown_sig = None 
                     else:  #current node receiving some kind of bottomup and therefore topdown info 
-                        if node == self.graph.output_node:
+                        if node == self.graph.output_node: #TODO: output_node not necessary the node receiving topdown_signal
                             topdown_sig = topdown_input #TODO: discuss with Mashbayar
                         else: #not output node
                             modulate_cells = self.graph.find_feedback_cells(node, t)
@@ -163,7 +163,7 @@ class Architecture(object):
                                 if is_first:
                                     topdown_sig = self.graph.conn_strength[i][node]*hidden_state_prev[i]
                                 else:
-                                    topdown_sig = topdown_sig + self.graph.conn_strength[i][node]*hidden_state_prev[i]
+                                    topdown_sig = topdown_sig + self.graph.conn_strength[i][node]*hidden_state_prev[i] #TODO: torch cat into channel dimension 
                                 if_First = False
 
                     #now we are done with gathering bottomup and topdown inputs for current cell
