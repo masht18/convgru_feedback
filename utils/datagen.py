@@ -7,11 +7,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
-import yaml
-import h5py
 from copy import deepcopy
-from ambiguous.data_utils import *
-from ambiguous.models.ambiguous_generator import MNISTGenerator
+import torch
+# from ambiguous.data_utils import *
+# from ambiguous.models.ambiguous_generator import MNISTGenerator
 from torchvision.utils import save_image
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(42)
@@ -91,8 +90,8 @@ def sequence_gen(imgs, label, clean_data, mnist_ref, seq_style = 'addition', lab
             t1_label = t2_label - 1
             t0_label = t1_label - 2
             
-        t0 = torch.unsqueeze(clean_data[random.choice(mnist_ref[t0_label]).item()][0], 0).cuda()
-        t1 = torch.unsqueeze(clean_data[random.choice(mnist_ref[t1_label]).item()][0], 0).cuda() 
+        t0 = torch.unsqueeze(clean_data[random.choice(mnist_ref[t0_label]).item()][0], 0).cpu()
+        t1 = torch.unsqueeze(clean_data[random.choice(mnist_ref[t1_label]).item()][0], 0).cpu() 
         
         # construct sequence
         sequence = torch.vstack((t0, t1, t2))
@@ -110,7 +109,6 @@ def sequence_gen(imgs, label, clean_data, mnist_ref, seq_style = 'addition', lab
                 plt.gca().axes.get_xaxis().set_visible(False)
                 plt.imshow(img)
             plt.show()
-            
     return input_seqs
 
 '''
