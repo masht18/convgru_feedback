@@ -17,6 +17,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from utils.datagen import *
 from model.graph import Graph
+import torch.utils.data as data_utils
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -65,6 +66,9 @@ test_data = datasets.MNIST(root=MNIST_path, download=True, train=False, transfor
 mnist_ref_train = generate_label_reference(train_data)
 mnist_ref_test = generate_label_reference(test_data)
 
+train_data = data_utils.Subset(train_data, torch.arange(1024))
+test_data = data_utils.Subset(test_data, torch.arange(512))
+
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=True)
 
@@ -72,9 +76,12 @@ test_loader = DataLoader(test_data, batch_size=32, shuffle=True)
 connection_strengths = [[0, 1, 1, 1],[1,0,1,1],[1,1,0,1],[1,1,1,0]]
 criterion = nn.CrossEntropyLoss()
 connections = [[0,1,1,0],[0,0,1,1],[0,0,0,1], [0,0,0,0]] #V1 V2 V4 IT
-input_node = 0 # V1
+input_nodes = [0,3] # V1, PIT
 output_node = 3 #IT
-graph = Graph(connections = connections, conn_strength = connection_strengths, input_node = input_node, output_node_index = output_node)
+input_node_params = []
+input_node_params.append([1,28,28])
+input_node_params.append([10,10,10])
+graph = Graph(input_node_params = input_node_params,connections = connections, conn_strength = connection_strengths, input_node_indices = input_nodes, output_node_index = output_node)
 model = graph.build_architecture()
 # model = ConvGRUExplicitTopDown((28, 28), 10, input_dim=1, 
 #                                hidden_dim=10, 
@@ -118,9 +125,12 @@ def test_sequence(dataloader, clean_data, dataset_ref):
             input_seqs = sequence_gen(imgs, label, clean_data, dataset_ref, seq_style='addition')
                 
             # Generate random topdown
-            topdown = torch.rand(imgs.shape[0], args['topdown_c'], args['topdown_h'], args['topdown_w'])
-
-            output = model(input_seqs.float(), topdown_input = topdown)
+            #topdown = torch.rand(imgs.shape[0], args['topdown_c'], args['topdown_h'], args['topdown_w'])
+            topdown = torch.rand(imgs.shape[0], 3, 10, 10, 10) #[b,t,c,h,w] 
+            input_tensor = []
+            input_tensor.append(input_seqs.float())
+            input_tensor.append(topdown)
+            output = model(input_tensor_list = input_tensor)
 
             _, predicted = torch.max(output.data, 1)
             total += label.size(0)
@@ -145,9 +155,13 @@ def train_sequence():
 
 
         # Generate random topdown for testing purposes only
-        topdown = torch.rand(imgs.shape[0], args['topdown_c'], args['topdown_h'], args['topdown_w'])
+        topdown = torch.rand(imgs.shape[0], 3, 10, 10, 10) #[b,t,c,h,w] #TODO: changed 10 to 1
             
-        output = model(input_seqs.float(), topdown)
+        input_tensor = []    
+        input_tensor.append(input_seqs.float())
+        input_tensor.append(topdown.float())
+
+        output = model(input_tensor_list = input_tensor)
             
         loss = criterion(output, label)
         running_loss += loss.item()
