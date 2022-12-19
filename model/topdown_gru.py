@@ -74,8 +74,6 @@ class ConvGRUTopDownCell(nn.Module):
 
         a = torch.cat([input_tensor, reset_gate*h_cur], dim=1)
         b = (F.relu(topdown) + 1)
-        print('a',a.shape)
-        print('b',b.shape)
         combined =  a*b
         cc_cnm = self.conv_can(combined)
         cnm = torch.tanh(cc_cnm)

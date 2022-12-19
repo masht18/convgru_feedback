@@ -17,7 +17,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from utils.datagen import *
 from model.graph import Graph
-import torch.utils.data as data_utils
+from model.topdown_gru import ConvGRUExplicitTopDown
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -30,7 +30,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--cuda', type = bool, default = True, help = 'use gpu or not')
-parser.add_argument('--epochs', type = int, default = 1)#50)
+parser.add_argument('--epochs', type = int, default = 10)
 parser.add_argument('--layers', type = int, default = 1)
 parser.add_argument('--topdown_c', type = int, default = 10)
 parser.add_argument('--topdown_h', type = int, default = 10)
@@ -66,23 +66,18 @@ test_data = datasets.MNIST(root=MNIST_path, download=True, train=False, transfor
 mnist_ref_train = generate_label_reference(train_data)
 mnist_ref_test = generate_label_reference(test_data)
 
-train_data = data_utils.Subset(train_data, torch.arange(1024))
-test_data = data_utils.Subset(test_data, torch.arange(512))
-
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=True)
 
 
-connection_strengths = [[0, 1, 1, 1],[1,0,1,1],[1,1,0,1],[1,1,1,0]]
+connection_strengths = [1, 1, 1, 1] 
 criterion = nn.CrossEntropyLoss()
 connections = [[0,1,1,0],[0,0,1,1],[0,0,0,1], [0,0,0,0]] #V1 V2 V4 IT
-input_nodes = [0,3] # V1, PIT
+connection_strengths = [[1,1,1,1],[1,1,1,1],[1,1,1,1], [1,1,1,1]]
+input_node = [0,3] # V1
 output_node = 3 #IT
-input_node_params = []
-input_node_params.append([1,28,28])
-input_node_params.append([10,10,10])
-graph = Graph(input_node_params = input_node_params,connections = connections, conn_strength = connection_strengths, input_node_indices = input_nodes, output_node_index = output_node)
-model = graph.build_architecture()
+graph = Graph(connections = connections, conn_strength = connection_strengths, input_node_indices = input_node, output_node_index = output_node, dtype = torch.cuda.FloatTensor)
+model = graph.build_architecture().cuda().float()
 # model = ConvGRUExplicitTopDown((28, 28), 10, input_dim=1, 
 #                                hidden_dim=10, 
 #                                kernel_size=(3,3),
@@ -115,22 +110,23 @@ def test_sequence(dataloader, clean_data, dataset_ref):
     with torch.no_grad():
 
         for i, data in enumerate(dataloader, 0):
-            print('---------------------',i,'-----------------')
+            print(i)
             optimizer.zero_grad()
 
             imgs, label = data
             imgs, label = imgs.to(device), label.to(device)
                 
             # Generate a sequence that adds up to loaded image    
-            input_seqs = sequence_gen(imgs, label, clean_data, dataset_ref, seq_style='addition')
-                
+            input_seqs = sequence_gen(imgs, label, clean_data, dataset_ref, seq_style='addition').float()
             # Generate random topdown
-            #topdown = torch.rand(imgs.shape[0], args['topdown_c'], args['topdown_h'], args['topdown_w'])
-            topdown = torch.rand(imgs.shape[0], 3, 10, 10, 10) #[b,t,c,h,w] 
-            input_tensor = []
-            input_tensor.append(input_seqs.float())
-            input_tensor.append(topdown)
-            output = model(input_tensor_list = input_tensor)
+            topdown = torch.rand(imgs.shape[0], input_seqs.shape[1], args['topdown_c'], args['topdown_h'], args['topdown_w']).to(device)
+            
+            input_list = []
+            input_list.append(input_seqs)
+            input_list.append(topdown)
+
+
+            output = model(input_list)
 
             _, predicted = torch.max(output.data, 1)
             total += label.size(0)
@@ -145,23 +141,23 @@ def train_sequence():
     running_loss = 0.0
         
     for i, data in enumerate(train_loader, 0):
-            
+        if (i % 10 == 0):
+            print (i)
         optimizer.zero_grad()
             
         imgs, label = data
         imgs, label = imgs.to(device), label.to(device)
 
-        input_seqs = sequence_gen(imgs, label, train_data, mnist_ref_train, seq_style='addition')
-
+        input_seqs = sequence_gen(imgs, label, train_data, mnist_ref_train, seq_style='addition').float()
 
         # Generate random topdown for testing purposes only
-        topdown = torch.rand(imgs.shape[0], 3, 10, 10, 10) #[b,t,c,h,w] #TODO: changed 10 to 1
-            
-        input_tensor = []    
-        input_tensor.append(input_seqs.float())
-        input_tensor.append(topdown.float())
-
-        output = model(input_tensor_list = input_tensor)
+        topdown = torch.rand(imgs.shape[0], input_seqs.shape[1], args['topdown_c'], args['topdown_h'], args['topdown_w']).to(device)
+        
+        input_list = []
+        input_list.append(input_seqs)
+        input_list.append(topdown)
+        
+        output = model(input_list)
             
         loss = criterion(output, label)
         running_loss += loss.item()
